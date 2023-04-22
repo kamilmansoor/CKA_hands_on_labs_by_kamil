@@ -1,0 +1,297 @@
+BASICS:
+------
+
+To check number of pods
+kubectl get pods
+
+TO delete the pod faster, you can run 
+kubectl delete pod ubuntu-sleeper --force
+
+To chec pods with their labels
+kubectl get pods --show-labels
+
+To add label to pod using imperative method
+kubectl label pods podname name=kamil
+
+To add label to nodes using imperative method
+kubectl label nodes ip-172-31-44-182 hardware=t2medium
+
+
+To find or list pods containing specific label(Equity based labels)
+kubectl get pods -l name=kamil
+
+
+To find or list pods containing either of the label(Set based labels)
+kubectl get pods -l 'name in (development,testing)' 
+
+
+To find or list pods not containing labels like development or testing(neither dev.. nor testing)(Set based labels)
+kubectl get pods -l 'name notin (development,testing)' 
+
+
+To get details of pods
+kubectl get pods -o wide
+
+Complete detail of pod
+kubectl describe pod podname
+
+Details of whats going on at container in a pod
+kubectl logs -f testpod
+
+Suppose we have multiple containers in a pod and we want to check details of specific container in a pod so the command is
+kubectl logs -f podname -c containername
+
+
+
+Labels,Selectors,ReplicationController and replicaset in Kubernetes:
+-------------------------------------------------------------------
+
+To check labels attached with a pod
+kubectl get pods --show-labels
+
+
+To attach label with a pod using imperative method(through command)
+kubectl label pods pod_name name=kamil
+
+Note: name=kamil is the newly attached label
+
+Get me the pod having particular label attached
+kubectl get pods -l name=kamil
+kubectl get pods -l env=development
+kubectl get pods -l env=development, name=kamil
+
+
+
+Get me the pod having particular label not attached
+kubectl get pods -l env!=development
+kubectl get pods -l name!=kamil
+
+Get me the pods having either of the attach label either env=development or env=testing
+kubectl get pods -l 'env in (development,testing)'
+
+kubectl get pods -l 'env notin (development,testing)'
+
+
+Delete pod using label
+kubectl delete pods -l env=development
+
+
+Attach label with node
+kubectl get nodes
+kubectl label nodes ip-172-31-91-37 hardware=t2-medium
+
+
+To describe replication controller
+kubectl describe rc replication_controller name 
+
+
+Show labels attach with replicationController
+kubectl get rc --show-labels
+ 
+
+Scale up replicas using replicationcontroller name or using label
+kubectl scale --replicas=5 rc replication_controller_name
+kubectl scale --replicas=5 rc -l myname=kamil
+
+
+Command to delete replicationController
+kubectl delete -f yml_file 
+kubectl delete rc replication_controller_name
+
+NOTE: simply rm yaml_file delete karne se repliaset and replicationontroller delete nh hota explicitly delete karna parta hai "rs" ya "rc" ko.
+
+kubectl delete object_type object_name
+
+kubectl delete -f file.yml
+
+
+
+
+
+
+Scale up replicas using replicaset name or using label
+kubectl scale --replicas=6 rs replica_set_name
+
+
+Describe replicaset
+kubectl describe rs replica_set_name
+
+
+
+Deployment Object in Kubernetes:
+--------------------------------
+
+kubectl get deploy deployment_name 
+"or"
+kubectl get deployment deployment_name
+
+Jab deployment create hot hai to sath mai replicaset bh create hoga b/c role of deployment is to control replicaSet.....you can confirm this by "kubectl describe deployment deployment_name" . 
+Inside details you can find the replicaSet is already created 
+
+
+Scaling in deployment
+kubectl scale --replicas=4 deployment deployment_name
+
+
+How to check logs of pod
+kubectl logs -f pod_name
+
+
+
+
+How to check version of a pod runing inside a deployment:
+kubectl exec pod_name_inside_deployment --cat /etc/os-release
+
+How to scale up replicas inside deployment
+kubectl scale --replicas=3 deploy deployment_name
+
+
+
+kubectl rollout status deployment deployment_name
+
+How to roll out to previous version in deployment (just one version back) 
+kubectl rollout undo deployment deployment_name
+
+History for rollout
+kubectl rollout status deployment deployment_name
+
+
+Updating/Change the image of deployment
+kubectl set image deployment/myapp-deployment \ nginx=nginx:1.9.1
+deployment "myapp-deployment" image is updated
+
+
+For example to create 1 pod with two containers You can use  imperative command to create single pod and write its YAML output in a file (using dry-run then you can trigger the updated file)
+kubectl run pod-name --image nginx --dry-run=client -o yaml > question1.yaml
+edit this file and add second container details and then execute it
+kubectl create -f question1.yaml
+
+
+
+
+NETWORKING IN Kbernetes:
+-----------------------
+
+kubectl get svc
+
+kubectl delete svc demoservice
+
+command to get into container in a pod
+kubectl exec pod_name -c container_name -it -- /bin/bash
+
+
+
+
+Persistent Volume and LivenessProbe:
+-----------------------------------
+
+to get persistent volumes
+kubectl get pv
+
+to get persistent volume claim
+kubectl get pvc
+
+
+
+
+Namespaces and Resource Quota:
+-----------------------------
+To create a pod in custom namespace
+kubectl apply -f pod.yml -n namespace_name
+
+you can confirm above 
+kubectl describe pod pod_name -n namespace_name | grep -i namespace 
+
+To delete pod that was created in a specific namespace
+kubectl delete -f pod.yml -n dev
+
+NOTE: Baically currently when you are in default namespace and to make operations in other namespace, you have to give -n namespace_name in command everytime
+
+Command to change Curent namespace so that your commands will get executed in specific namespace
+$ kubectl config set-context $(kubectl config current-context) --namespace=dev
+$ kubectl config view | grep namespace:  
+ 
+
+
+
+Kubernetes Horizontal Pod Autoscaling:
+-------------------------------------
+check in main file for this lecture
+
+
+
+
+
+Kubernetes Jobs,init container and pod lifecycle:
+-------------------------------------------------
+
+
+Kubernetes commands:
+
+
+kubectl create deployment --help
+
+kubectl create deployment deployment_name --image=imagename --replicas=no of replicas
+
+kubectl set image deloyment deployment_name ngnix=nginx:1.18-perl 
+
+
+creating a pod imperative method
+kubectl run nginx --image nginx
+
+
+
+______________________________________________
+
+
+list pods in all namespaces
+kubectl get pods -A
+
+
+Setting alias in k8s
+alias k=kubectl
+
+
+verify the current context --> kubectl config --kubeconfig=/root/my-kube-config current-context
+verify the current context --> kubectl config  current-context (provided your config file is at default location i.e /$HOME/.kube/)
+
+
+Use the kubectl edit command for the deployment and specify the serviceAccountName field inside the pod spec.
+OR kubectl set serviceaccount deploy/web-dashboard dashboard-sa
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

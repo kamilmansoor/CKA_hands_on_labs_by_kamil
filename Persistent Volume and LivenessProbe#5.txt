@@ -1,0 +1,168 @@
+PERSISTENT VOLUME
+================================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: myebsvol
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  awsElasticBlockStore:
+    # YAHAN APNI Newly created EBS VOLUME ki ID DAALO, This Ebs volume AZ needs to be same as of your Ec2 instance vol az	
+    volumeID: vol-0c938e06f81c05246 
+    fsType: ext4
+
+
+--------------
+
+============
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: myebsvolclaim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+=======================
+
+==================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pvdeploy
+spec:
+  replicas: 1
+  selector:      # tells the controller which pods to watch/belong to
+    matchLabels:
+     app: mypv
+  template:
+    metadata:
+      labels:
+        app: mypv
+    spec:
+      containers:
+      - name: shell
+        image: centos
+        command: ["bin/bash", "-c", "sleep 10000"]
+        volumeMounts:
+        - name: mypd
+          mountPath: "/tmp/persistent"
+      volumes:
+        - name: mypd
+          persistentVolumeClaim:
+            claimName: myebsvolclaim    # Name of PersistentVolumeClaim
+
+******
+Once this pod is created go inside to this pod using kubectl exec -it pod_id bash
+cd /tmp/persistent
+create a file kamil.txt , place some content inside this file
+exit 
+delete the pod 
+then new pod will be created automatically then go inside to this pod using kubectl exec -it pod_id bash
+cd /tmp/persistent
+there you will find the same file with same content
+*******
+
+-------------------------------------------------------
+-------------------------------------------------------
+
+
+HEALTHCHECK/LIVENESSPROBE
+==========================================================================================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    test: liveness
+  name: mylivenessprobe
+spec:
+  containers:
+  - name: liveness
+    image: ubuntu
+    args:
+    - /bin/sh
+    - -c
+    - touch /tmp/healthy; sleep 1000
+    livenessProbe:                                          
+      exec:
+        command:                                         
+        - cat                
+        - /tmp/healthy
+      initialDelaySeconds: 5  #wait for the specified time before it runs the first probe         
+      periodSeconds: 10        #run the above command i.e cat command after every 10 sec                          
+      timeoutSeconds: 30       #30 sec tak reply nh aya to kill the container and recreate a new one but after 3 failures     
+
+
+kubectl describe pod mylivenessprobe
+
+Liveness:       exec [cat /tmp/healthy] delay=5s timeout=30s period=10s #success=1 #failure=3
+means 3 dafa agar failure hota hai yani agar 3 dafa koi reply nh ata after every 30 sec neither "0" nor "1" then kill container and recreate a new one
+
+
+kubectl exec -it mylivenessprobe  bash
+cat /tmp/healthy
+echo $?
+output: 0  means healthy
+
+rm /tmp/healthy
+
+cat /tmp/healthy
+echo $?
+output: non-zero  means unhealthy
+
+cat /tmp/healthy
+echo $?
+output: non-zero  means unhealthy
+
+cat /tmp/healthy
+echo $?
+output: non-zero  means unhealthy
+
+exit
+
+kubectl describe pod mylivenessprobe
+Created container liveness
+Started container liveness
+
+
+q k file delete hogai to liveness probe ne container recreate kardiya
+
+                 
+--------------------------------------- - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

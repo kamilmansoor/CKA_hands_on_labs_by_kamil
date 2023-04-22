@@ -1,0 +1,111 @@
+===========Job=====================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: testjob
+spec:
+  template:
+    metadata:
+      name: testjob
+    spec:
+      containers:
+      - name: counter
+        image: centos:7
+        command: ["bin/bash", "-c", "echo Technical-Guftgu; sleep 5"]
+      restartPolicy: Never
+
+
+Apply above file then run 
+root@ip-10-0-0-104:/home/ubuntu# kubectl get pods
+NAME            READY   STATUS    RESTARTS   AGE
+testjob-hdpq2   1/1     Running   0          3s
+
+root@ip-10-0-0-104:/home/ubuntu# kubectl get pods
+NAME            READY   STATUS      RESTARTS   AGE
+testjob-hdpq2   0/1     Completed   0          16s
+
+
+After 5 second the work inside container (in pod) is stopped/deleted after completing the specific purpose
+-------------------------------------------
+
+PARALELLISM:
+-----------
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: testjob
+spec:
+  parallelism: 5                           # Runs for pods in parallel
+  activeDeadlineSeconds: 10  # Timesout after 30 sec
+  template:
+    metadata:
+      name: testjob
+    spec:
+      containers:
+      - name: counter
+        image: centos:7
+        command: ["bin/bash", "-c", "echo Technical-Guftgu; sleep 20"]
+      restartPolicy: Never
+
+
+This file will create 5 pods, after 20 seconds the container gets stopped, once container get stopped then after 10 seconds the pods will be deleted
+
+
+Output:
+
+root@ip-10-0-0-104:/home/ubuntu# kubectl get pods
+NAME            READY   STATUS        RESTARTS   AGE
+testjob-9xxb6   1/1     Runing   0          2s
+testjob-m5ccp   1/1     Runing   0          2s
+testjob-nh8h5   1/1     Runing   0          2s
+testjob-xcsns   1/1     Ruuning   0          2s
+testjob-ztww4   1/1     Runing   0          2s
+root@ip-10-0-0-104:/home/ubuntu# kubectl get pods
+NAME            READY   STATUS        RESTARTS   AGE
+testjob-9xxb6   1/1     Terminating   0          22s
+testjob-m5ccp   1/1     Terminating   0          22s
+testjob-nh8h5   1/1     Terminating   0          22s
+testjob-xcsns   1/1     Terminating   0          22s
+testjob-ztww4   1/1     Terminating   0          22s
+root@ip-10-0-0-104:/home/ubuntu# kubectl get pods
+NAME            READY   STATUS        RESTARTS   AGE
+testjob-nh8h5   1/1     Terminating   0          22s
+testjob-ztww4   1/1     Terminating   0          22s
+root@ip-10-0-0-104:/home/ubuntu# kubectl get pods
+NAME            READY   STATUS        RESTARTS   AGE
+testjob-nh8h5   1/1     Terminating   0          23s
+testjob-ztww4   1/1     Terminating   0          23s
+root@ip-10-0-0-104:/home/ubuntu# kubectl get pods
+No resources found in default namespace.
+root@ip-10-0-0-104:/home/ubuntu# kubectl get pods
+No resources found in default namespace.
+
+
+NOTE: Observe the output using: watch kubectl get pods
+-------------------------------------------------
+
+Cron
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+ name: bhupi
+spec:
+ schedule: "* * * * *" 
+ jobTemplate:
+   spec:
+     template:
+       spec:
+         containers:
+         - image: ubuntu
+           name: bhupi
+           command: ["/bin/bash", "-c", "echo Technical-Guftgu; sleep 5"]
+         restartPolicy: Never
+
+File apply karne k ek minute baad pod create hoga then theek 5 sec baad container delete hojaega, then  after one minute new pod will be created and similary after 5 sec the container inside pod will be deleted
+
+NOTE: Observe the output using: watch kubectl get pods 
+=================
+
+

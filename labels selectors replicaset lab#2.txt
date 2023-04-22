@@ -1,0 +1,123 @@
+*****************YAML Files used in demo*************************
+
+EXAMPLE OF LABELS
+
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: delhipod
+  labels:                                                   
+    env: development
+    class: pods
+spec:
+    containers:
+       - name: c00
+         image: ubuntu
+         command: ["/bin/bash", "-c", "while true; do echo Hello-Bhupinder; sleep 5 ; done"]
+
+
+
+***************************************************************************
+NODE SELECTOR EXAMPLE
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: nodelabels
+  labels:
+    env: development
+spec:
+    containers:
+       - name: c00
+         image: ubuntu
+         command: ["/bin/bash", "-c", "while true; do echo Hello-Bhupinder; sleep 5 ; done"]
+    nodeSelector:                                         
+       hardware: t2-medium
+*****************************************************************************************************
+EXAMPLE OF REPLICATION CONTROLLER
+
+kind: ReplicationController               
+apiVersion: v1
+metadata:
+  name: myreplica
+spec:
+  replicas: 2            
+  selector:        
+    myname: Bhupinder                              
+  template:                
+    metadata:
+      name: testpod6
+      labels:            
+        myname: Bhupinder
+    spec:
+     containers:
+       - name: c00
+         image: ubuntu
+         command: ["/bin/bash", "-c", "while true; do echo Hello-Bhupinder; sleep 5 ; done"]
+
+Selector name and label name needs to be same. Actually hum selector k through wo pod select kar rhe hain jin per myname: Bhupinder naam ka label laga hua hai. The selector is not a REQUIRED field in case of a replication controller, but it is still available. When you skip it, it assumes it to be the same as the labels provided in the pod-definition file.
+
+
+****************************************************************************************************************
+EXAMPLE OF REPLICA SET
+
+
+kind: ReplicaSet                                    
+apiVersion: apps/v1                            
+metadata:
+  name: myrs
+spec:
+  replicas: 2  
+  selector:                  
+    matchExpressions:                             # these must match the labels
+      - {key: myname, operator: In, values: [Bhupinder, Bupinder, Bhopendra]}
+      - {key: env, operator: NotIn, values: [production]}
+  template:      
+    metadata:
+      name: testpod7
+      labels:              
+        myname: Bhupinder
+    spec:
+     containers:
+       - name: c00
+         image: ubuntu
+         command: ["/bin/bash", "-c", "while true; do echo Technical-Guftgu; sleep 5 ; done"]
+
+***************************************END******************************
+Impotance of Selector:
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: frontend
+  labels:
+    app: guestbook
+    tier: frontend
+spec:
+  selector:
+    matchLabels:
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        tier: frontend
+    spec:
+      containers:
+      - name: php-redis
+        image: gcr.io/google_samples/gb-frontend:v3
+    replicas: 3
+
+
+
+The "selector" field in line 11 specifies the label selector that the ReplicaSet will use to select the Pods it should manage, and the "metadata.labels" field in line 15 specifies the labels that the Pods created by the ReplicaSet should have.
+
+Both the "selector" and "metadata.labels" fields have the same value for the "tier" label, which means that the ReplicaSet will manage the Pods that have this label and the Pods created by the ReplicaSet will also have this label. However, as mentioned in my previous response, the "selector" field is used to match the existing Pods that the ReplicaSet should manage, while the "metadata.labels" field is used to add the specified labels to the Pods created by the ReplicaSet.
+
+
+
+
+
+
+
+

@@ -1,0 +1,132 @@
+==============================NAMESPACES===================================
+apiVersion: v1
+kind: Namespace
+metadata:
+   name: dev
+   labels:
+     name: dev
+
+
+=================================to create a pod=================
+vi pod.yml
+
+
+kind: Pod                              
+apiVersion: v1                     
+metadata:                           
+  name: testpod                  
+spec:                                    
+  containers:                      
+    - name: c00                     
+      image: ubuntu              
+      command: ["/bin/bash", "-c", "while true; do echo Technical Guftgu; sleep 5 ; done"]
+  restartPolicy: Never       
+================================================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resources
+spec:
+  containers:
+  - name: resource
+    image: centos
+    command: ["/bin/bash", "-c", "while true; do echo Technical-Guftgu; sleep 5 ; done"]
+    resources:                                          
+      requests:
+        memory: "64Mi"
+        cpu: "100m"
+      limits:
+        memory: "128Mi"
+        cpu: "200m"
+
+
+
+============RESOURCEQUOTA========================================
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+   name: myquota
+spec:
+  hard:
+    limits.cpu: "400m"
+    limits.memory: "400Mi"
+    requests.cpu: "200m"
+    requests.memory: "200Mi"
+
+===========================================================
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: deployments
+spec:
+  replicas: 3
+  selector:      
+    matchLabels:
+     objtype: deployment
+  template:
+    metadata:
+      name: testpod8
+      labels:
+        objtype: deployment
+    spec:
+     containers:
+       - name: c00
+         image: ubuntu
+         command: ["/bin/bash", "-c", "while true; do echo Technical-Guftgu; sleep 5 ; done"]
+         resources:
+            requests:
+              cpu: "200m"
+
+NOTE: IT will unable to create pods in above deployment b/c we have set cpu limit for namaspace i.e "400m" and as per above yml file each pod is requesting for  "200m" cpu limit, so 3 pods will take "600m" cpu which is not available as per resource quota as we have only "400m" cpu is available.
+
+
+=================LIMIT RANGE===========================================
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-limit-range
+spec:
+  limits:
+  - default:
+      cpu: 1
+    defaultRequest:
+      cpu: 0.5
+    type: Container
+
+NOte: Apply this and when next time you create a pod you'll see it will get 0.5 cpu out of 1 cpu
+
+==============Limit Defined Request Not Defined======================================
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: default-cpu-demo-2
+spec:
+  containers:
+  - name: default-cpu-demo-2-ctr
+    image: nginx
+    resources:
+      limits:
+        cpu: "1"
+
+NOTE: This pod "default-cpu-demo-2" will get 1 CPU b/c you have not defined request  so request=limit
+
+==============Limit Not Defined Request Defined======================================
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: default-cpu-demo-3
+spec:
+  containers:
+  - name: default-cpu-demo-3-ctr
+    image: nginx
+    resources:
+      requests:
+        cpu: "0.75"
+
+
+NOTE: This pod "default-cpu-demo-3" will get 0.75 CPU and 1 CPU is available(as limit) so limit>request
+
+

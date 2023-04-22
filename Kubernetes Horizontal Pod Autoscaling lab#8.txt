@@ -1,0 +1,251 @@
+
+
+===	MEMORY LIMIT RANGE	======
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: mem-min-max-demo-lr
+spec:
+  limits:
+  - max:
+      memory: 1Gi
+    min:
+      memory: 500Mi
+    type: Container
+
+=========== MEMORY ==========
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: constraints-mem-demo
+spec:
+  containers:
+  - name: constraints-mem-demo-ctr
+    image: nginx
+    resources:
+      limits:
+        memory: "800Mi"
+      requests:
+        memory: "600Mi"
+
+
+============ CPU =============
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: constraints-cpu-demo
+spec:
+  containers:
+  - name: constraints-cpu-demo-ctr
+    image: nginx
+    resources:
+      limits:
+        cpu: 1
+      requests:
+        cpu: 0.5
+
+========= CHANGING MEMORY VALUES =======
+apiVersion: v1
+kind: Pod
+metadata:
+  name: constraints-mem2-demo
+spec:
+  containers:
+  - name: constraints-mem2-demo-ctr
+    image: nginx
+    resources:
+      limits:
+        memory: "1200Mi"
+      requests:
+        memory: "600Mi"
+
+Apply above file you'll get Error
+Error from server (Forbidden): error when creating "mem2.yml": pods "constraints-mem2-demo" is forbidden: maximum memory usage per Container is 1Gi, but limit is 1200Mi
+
+========= CHANGING MEMORY VALUES =======
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: constraints-mem3-demo
+spec:
+  containers:
+  - name: constraints-mem3-demo-ctr
+    image: nginx
+    resources:
+      limits:
+        memory: "800Mi"
+      requests:
+        memory: "400Mi"
+
+Apply above file you'll get Error
+Error from server (Forbidden): error when creating "mem3.yml": pods "constraints-mem3-demo" is forbidden: minimum memory usage per Container is 500Mi, but request is 400Mi
+
+
+=====CHANGING CPU VALUES=========
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: constraints-cpu3-demo
+spec:
+  containers:
+  - name: constraints-cpu3-demo-ctr
+    image: nginx
+    resources:
+      limits:
+        cpu: 1.6
+      requests:
+        cpu: 1.1
+
+Apply above file POD WILL BE CREATED, kubectl describe pod constraints-cpu3-demo  => get this output
+Containers:
+  constraints-cpu3-demo-ctr:
+    Image:      nginx
+    Port:       <none>
+    Host Port:  <none>
+    Limits:
+      cpu:     1600m
+      memory:  1Gi
+    Requests:
+      cpu:        1100m
+      memory:     1Gi
+    Environment:  <none>
+
+NOTE: POD WILL BE CREATED, Because we have not created a file for cpu limit range like the first file for memory range limit.
+
+
+=====CHANGING CPU VALUES=========
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: constraints-cpu4-demo
+spec:
+  containers:
+  - name: constraints-cpu4-demo-ctr
+    image: nginx
+    resources:
+      limits:
+        cpu: 1.2
+      requests:
+        cpu: 0.3
+
+
+Apply above file POD WILL BE CREATED, kubectl describe pod constraints-cpu4-demo  => get this output
+Containers:
+  constraints-cpu4-demo-ctr:
+    Image:      nginx
+    Port:       <none>
+    Host Port:  <none>
+    Limits:
+      cpu:     1200m
+      memory:  1Gi
+    Requests:
+      cpu:        300m
+      memory:     1Gi
+    Environment:  <none>
+
+
+NOTE: POD WILL BE CREATED, Because we have not created a file for cpu limit range like the first file for memory range limit.
+
+
+
+
+
+======= CPU LIMIT RANGE ============
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-min-max-demo-lr
+spec:
+  limits:
+  - max:
+      cpu: 1
+    min:
+      cpu: 0.5
+    type: Container
+
+
+NOW CREATE POD WITH REQUEST FOR CPU LESS THAN 0.5 OR LIMIT GREATER THAN 1
+
+===========
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: constraints-cpu5-demo
+spec:
+  containers:
+  - name: constraints-cpu5-demo-ctr
+    image: nginx
+    resources:
+      limits:
+        cpu: 1
+      requests:
+        cpu: 0.2
+
+Apply above file you'll get Error B/C NOW WE HAVE SET LIMIT RANGE FOR CPU TOO
+Error from server (Forbidden): error when creating "cpu5.yml": pods "constraints-cpu5-demo" is forbidden: minimum cpu usage per Container is 500m, but request is 200m
+
+===========
+HPA:
+
+wget -O metricserver.yml https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+Add this line inside the file 
+- --kubelet-insecure-tls
+============
+
+====================
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: mydeploy
+spec:
+   replicas: 1
+   selector:
+    matchLabels:
+     name: deployment
+   template:
+     metadata:
+       name: testpod8
+       labels:
+         name: deployment
+     spec:
+      containers:
+        - name: c00
+          image: httpd
+          ports:
+          - containerPort: 80
+          resources:
+            limits:
+              cpu: 500m
+            requests:
+              cpu: 200m
+
+$ kubectl autoscale deployment mydeploy --cpu-percent=20 --min=1 --max=10 
+
+min pods=1
+max pods=10
+
+horizontalpodautoscaler.autoscaling/mydeploy autoscaled
+============================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
