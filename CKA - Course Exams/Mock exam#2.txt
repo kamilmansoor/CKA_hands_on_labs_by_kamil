@@ -1,0 +1,251 @@
+Take a backup of the etcd cluster and save it to /opt/etcd-backup.db.
+
+Solution:
+
+ETCDCTL_API=3 etcdctl --endpoints=https://[127.0.0.1]:2379 \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+snapshot save /opt/etcd-backup.db
+
+
+__________________________________________________________________________________
+
+Create a Pod called redis-storage with image: redis:alpine with a Volume of type emptyDir that lasts for the life of the Pod.
+Specs on the below.
+Pod named 'redis-storage' created
+Pod 'redis-storage' uses Volume type of emptyDir
+Pod 'redis-storage' uses volumeMount with mountPath = /data/redis
+
+
+Solution:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-storage
+spec:
+  containers:
+  - name: nginx
+    image: redis:alpine
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - mountPath: /data/redis
+      name: cache-volume
+  volumes:
+  - name: cache-volume
+    emptyDir:
+      sizeLimit: 500Mi
+
+
+__________________________________________________
+Create a new pod called super-user-pod with image busybox:1.28. Allow the pod to be able to set system_time.
+The container should sleep for 4800 seconds.
+Pod: super-user-pod
+Container Image: busybox:1.28
+Is SYS_TIME capability set for the container?
+
+
+Solution:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: super-user-pod
+spec:
+  containers:
+  - name: sec-ctx-4
+    image: busybox:1.28
+    command: ["sleep", "4800"]
+    securityContext:
+      capabilities:
+        add: ["SYS_TIME"]
+
+______________________________________________________________
+A pod definition file is created at /root/CKA/use-pv.yaml. Make use of this manifest file and mount the persistent volume called pv-1. Ensure the pod is running and the PV is bound.
+mountPath: /data
+persistentVolumeClaim Name: my-pvc
+
+Solution:
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 10Mi
+ 
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: use-pv
+  name: use-pv
+spec:
+  containers:
+  - image: nginx
+    name: use-pv
+    volumeMounts:
+      - mountPath: "/data"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: my-pvc
+
+______________________________________________
+Create a new deployment called nginx-deploy, with image nginx:1.16 and 1 replica. Next upgrade the deployment to version 1.17 using rolling update.
+
+
+Solution:
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.16
+        ports:
+        - containerPort: 80
+
+
+kubectl set image deployment/nginx-deploy nginx=nginx:1.17
+
+
+
+__________________________________________________
+
+Create a new user called john. Grant him access to the cluster. John should have permission to create, list, get, update and delete pods in the development namespace . The private key exists in the location: /root/CKA/john.key and csr at /root/CKA/john.csr.
+Important Note: As of kubernetes 1.19, the CertificateSigningRequest object expects a signerName.
+Please refer the documentation to see an example. The documentation tab is available at the top right of terminal.
+CSR: john-developer Status:Approved
+Role Name: developer, namespace: development, Resource: Pods
+Access: User 'john' has appropriate permissions
+
+
+Solution:
+
+LINK: https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/#create-certificatessigningrequest
+
+
+user "john" is already created in the system
+
+cat /root/CKA/john.csr | base64 | tr -d "\n"
+
+copy the value and replace in below "CertificateSigningRequest" with the value of request
+
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: john-developer
+spec:
+  request: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ1ZqQ0NBVDRDQVFBd0VURVBNQTBHQTFVRUF3d0dZVzVuWld4aE1JSUJJakFOQmdrcWhraUc5dzBCQVFFRgpBQU9DQVE4QU1JSUJDZ0tDQVFFQTByczhJTHRHdTYxakx2dHhWTTJSVlRWMDNHWlJTWWw0dWluVWo4RElaWjBOCnR2MUZtRVFSd3VoaUZsOFEzcWl0Qm0wMUFSMkNJVXBGd2ZzSjZ4MXF3ckJzVkhZbGlBNVhwRVpZM3ExcGswSDQKM3Z3aGJlK1o2MVNrVHF5SVBYUUwrTWM5T1Nsbm0xb0R2N0NtSkZNMUlMRVI3QTVGZnZKOEdFRjJ6dHBoaUlFMwpub1dtdHNZb3JuT2wzc2lHQ2ZGZzR4Zmd4eW8ybmlneFNVekl1bXNnVm9PM2ttT0x1RVF6cXpkakJ3TFJXbWlECklmMXBMWnoyalVnald4UkhCM1gyWnVVV1d1T09PZnpXM01LaE8ybHEvZi9DdS8wYk83c0x0MCt3U2ZMSU91TFcKcW90blZtRmxMMytqTy82WDNDKzBERHk5aUtwbXJjVDBnWGZLemE1dHJRSURBUUFCb0FBd0RRWUpLb1pJaHZjTgpBUUVMQlFBRGdnRUJBR05WdmVIOGR4ZzNvK21VeVRkbmFjVmQ1N24zSkExdnZEU1JWREkyQTZ1eXN3ZFp1L1BVCkkwZXpZWFV0RVNnSk1IRmQycVVNMjNuNVJsSXJ3R0xuUXFISUh5VStWWHhsdnZsRnpNOVpEWllSTmU3QlJvYXgKQVlEdUI5STZXT3FYbkFvczFqRmxNUG5NbFpqdU5kSGxpT1BjTU1oNndLaTZzZFhpVStHYTJ2RUVLY01jSVUyRgpvU2djUWdMYTk0aEpacGk3ZnNMdm1OQUxoT045UHdNMGM1dVJVejV4T0dGMUtCbWRSeEgvbUNOS2JKYjFRQm1HCkkwYitEUEdaTktXTU0xMzhIQXdoV0tkNjVoVHdYOWl4V3ZHMkh4TG1WQzg0L1BHT0tWQW9FNkpsYWFHdTlQVmkKdjlOSjVaZlZrcXdCd0hKbzZXdk9xVlA3SVFjZmg3d0drWm89Ci0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 86400  # one day
+  usages:
+  - client auth
+
+k apply -f <above csr file>
+
+kubectl certificate approve john-developer
+
+kubectl create role developer --verb=create --verb=get --verb=list --verb=update --verb=delete --resource=pods -n development
+
+kubectl create rolebinding developer-binding-myuser --role=developer --user=john -n development
+
+Confirm this using: k auth can-i create  pods -n development --as=john
+
+
+__________________________________________________
+
+
+
+Create a nginx pod called nginx-resolver using image nginx, expose it internally with a service called nginx-resolver-service. Test that you are able to look up the service and pod names from within the cluster. Use the image: busybox:1.28 for dns lookup. Record results in /root/CKA/nginx.svc and /root/CKA/nginx.pod
+Pod: nginx-resolver created
+Service DNS Resolution recorded correctly
+Pod DNS resolution recorded correctly
+
+
+Solution:
+
+k run nginx-resolver --image=nginx --dry-run=client -o yaml > nginx-resolver-pod.yaml
+k expose pod nginx-resolver --name nginx-resolver-service  --port=80
+k run busybox --image=busybox:1.28 -- sleep 5000
+
+for svc:
+-------
+k exec busybox -- nslookup nginx-resolver-service.default.svc.cluster.local > /root/CKA/nginx.svc
+
+for pod:
+--------
+In general a Pod has the following DNS resolution:
+pod-ip-address.my-namespace.pod.cluster-domain.example.
+For example, if a Pod in the default namespace has the IP address 172.17.0.3, and the domain name for your cluster is cluster.local, then the Pod has a DNS name:
+172-17-0-3.default.pod.cluster.local.
+
+k exec busybox -- nslookup 10-244-192-4.default.pod.cluster.local > /root/CKA/nginx.pod
+
+
+__________________________________________________
+
+Create a static pod on node01 called nginx-critical with image nginx and make sure that it is recreated/restarted automatically in case of a failure.
+Use /etc/kubernetes/manifests as the Static Pod path for example.
+static pod configured under /etc/kubernetes/manifests ?
+Pod nginx-critical-node01 is up and running
+
+Solution:
+
+ssh node01
+cd /etc/kubernetes/manifests/ --> create below file
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-critical
+  labels:
+    role: myrole
+spec:
+  containers:
+    - name: web
+      image: nginx
+      ports:
+        - name: web
+          containerPort: 80
+          protocol: TCP
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

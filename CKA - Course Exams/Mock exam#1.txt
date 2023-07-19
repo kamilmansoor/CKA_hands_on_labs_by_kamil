@@ -1,0 +1,35 @@
+https://github.com/kodekloudhub/certified-kubernetes-administrator-course/blob/master/docs/15-Mock-Exams/02-Mock-Exam-1.md
+
+------------------------------
+
+Use JSON PATH query to retrieve the osImages of all the nodes and store it in a file /opt/outputs/nodes_os_x43kj56.txt.
+The osImages are under the nodeInfo section under status of each node.
+
+kubectl get nodes -o jsonpath='{.items[*].status.nodeInfo.osImage}' > /opt/outputs/nodes_os_x43kj56.txt
+
+
+
+-------------------------
+
+PERSISTENT-VOLUME Connected to Hostpath:
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/#create-a-persistentvolume
+
+
+Create a Persistent Volume with the given specification: -
+Volume name: pv-analytics
+Storage: 100Mi
+Access mode: ReadWriteMany
+Host path: /pv/data-analytics
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-analytics
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+      path: /pv/data-analytics

@@ -1,0 +1,150 @@
+Upgrade the current version of kubernetes from 1.25.0 to 1.26.0 exactly using the kubeadm utility.
+https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/
+
+
+LINK: https://github.com/kodekloudhub/certified-kubernetes-administrator-course/blob/master/docs/14-Lightning-Labs/02-Lightning-Lab-1.md
+
+
+
+apt-mark unhold kubeadm && \
+apt-get update && apt-get install -y kubeadm=1.27.0-00 && \
+apt-mark hold kubeadm
+
+
+sudo kubeadm upgrade apply v1.27.0
+
+kubectl drain controlplane --ignore-daemonsets
+
+apt-mark unhold kubelet kubectl && \
+apt-get update && apt-get install -y kubelet=1.27.0-00 kubectl=1.27.0-00 && \
+apt-mark hold kubelet kubectl
+
+
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+
+
+kubectl uncordon controlplane
+
+
+kubectl taint nodes controlplane node-role.kubernetes.io/control-plane:NoSchedule-
+
+
+kubectl drain node01 --ignore-daemonsets
+
+-----
+ssh node01:
+
+
+apt-mark unhold kubeadm && \
+apt-get update && apt-get install -y kubeadm=1.27.0-00 && \
+apt-mark hold kubeadm
+
+
+sudo kubeadm upgrade node
+
+
+
+apt-mark unhold kubelet kubectl && \
+apt-get update && apt-get install -y kubelet=1.27.0-00 kubectl=1.27.0-00 && \
+apt-mark hold kubelet kubectl
+
+
+sudo systemctl daemon-reload ; sudo systemctl restart kubelet
+
+Get back to controlplane node --> kubectl uncordon node01
+
+
+_______________________________________________________________________
+
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-alpha-pvc
+  namespace: alpha
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: slow
+
+
+______________________
+
+ETCDCTL_API=3 etcdctl --endpoints=https://[127.0.0.1]:2379 \
+--cacert=/etc/kubernetes/pki/etcd/ca.crt \
+--cert=/etc/kubernetes/pki/etcd/server.crt \
+--key=/etc/kubernetes/pki/etcd/server.key \
+snapshot save /opt/etcd-backup.db
+
+
+____________________
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: secret-1401
+  namespace: admin1401
+spec:
+  volumes:
+  - name: foo
+    secret:
+      secretName: dotfile-secret
+      optional: true
+  containers:
+  - name: secret-admin
+    image: busybox
+    command:
+    - sleep
+    - "4800" 
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: foo
+      mountPath: "/etc/secret-volume"
+      readOnly: true
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
