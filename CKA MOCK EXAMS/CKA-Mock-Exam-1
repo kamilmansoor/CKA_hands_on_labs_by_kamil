@@ -1113,7 +1113,82 @@ student-node ~ ➜  kubectl run test-nslookup --image=busybox:1.28 --rm -it --re
 
 
 
+----------------------------------------------------------------
 
+
+21
+
+For this question, please set the context to cluster2 by running:
+
+
+kubectl config use-context cluster2
+
+
+Install etcd utility on cluster2-controlplane node so that we can take/restore etcd backups.
+
+
+You can ssh to the controlplane node by running ssh root@cluster2-controlplane from the student-node.
+
+info_outline
+Solution
+SSH into cluster2-controlplane node:
+
+student-node ~ ➜ ssh root@cluster2-controlplane
+
+
+
+Install etcd utility:
+
+cluster2-controlplane ~ ➜ cd /tmp
+cluster2-controlplane ~ ➜ export RELEASE=$(curl -s https://api.github.com/repos/etcd-io/etcd/releases/latest | grep tag_name | cut -d '"' -f 4)
+cluster2-controlplane ~ ➜ wget https://github.com/etcd-io/etcd/releases/download/${RELEASE}/etcd-${RELEASE}-linux-amd64.tar.gz
+cluster2-controlplane ~ ➜ tar xvf etcd-${RELEASE}-linux-amd64.tar.gz ; cd etcd-${RELEASE}-linux-amd64
+cluster2-controlplane ~ ➜ mv etcd etcdctl  /usr/local/bin/
+
+
+
+----------------------------------------------------------------
+
+
+22
+
+
+SECTION: TROUBLESHOOTING
+
+
+For this question, please set the context to cluster1 by running:
+
+
+kubectl config use-context cluster1
+
+
+There is a Cronjob called orange-cron-cka10-trb which is supposed to run every two minutes (i.e 13:02, 13:04, 13:06…14:02, 14:04…and so on). This cron targets the application running inside the orange-app-cka10-trb pod to make sure the app is accessible. The application has been exposed internally as a ClusterIP service.
+
+
+However, this cron is not running as per the expected schedule and is not running as intended.
+
+
+Make the appropriate changes so that the cronjob runs as per the required schedule and it passes the accessibility checks every-time.
+
+info_outline
+Solution
+Check the cron schedule
+kubectl get cronjob
+Make sure the schedule for orange-cron-cka10-trb crontjob is set to */2 * * * * if not then edit it.
+
+Also before that look for the issues why this cron is failing
+
+kubectl logs orange-cron-cka10-trb-xxxx
+You will see some error like
+
+curl: (6) Could not resolve host: orange-app-cka10-trb
+You will notice that the curl is trying to hit orange-app-cka10-trb directly but it is supposed to hit the relevant service which is orange-svc-cka10-trb so we need to fix the curl command.
+
+Edit the cronjob
+kubectl edit cronjob orange-cron-cka10-trb
+Change schedule * * * * * to */2 * * * *
+Change command curl orange-app-cka10-trb to curl orange-svc-cka10-trb
+Wait for 2 minutes to run again this cron and it should complete now.
 
 
 
