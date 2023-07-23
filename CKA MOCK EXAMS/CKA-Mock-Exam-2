@@ -1506,3 +1506,180 @@ student-node ~ ➜  IP=`kubectl get pod nginx-resolver-cka06-svcn -o wide --no-h
 student-node ~ ➜  kubectl run test-nslookup --image=busybox:1.28 --rm -it --restart=Never -- nslookup $IP.default.pod > /root/CKA/nginx.pod.cka06.svcn
 
 
+
+_____________________________________________
+
+21-
+
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+
+For this question, please set the context to cluster3 by running:
+
+
+kubectl config use-context cluster3
+
+
+A pod called elastic-app-cka02-arch is running in the default namespace. The YAML file for this pod is available at /root/elastic-app-cka02-arch.yaml on the student-node. The single application container in this pod writes logs to the file /var/log/elastic-app.log.
+
+
+One of our logging mechanisms needs to read these logs to send them to an upstream logging server but we don't want to increase the read overhead for our main application container so recreate this POD with an additional sidecar container that will run along with the application container and print to the STDOUT by running the command tail -f /var/log/elastic-app.log. You can use busybox image for this sidecar container.
+
+
+Solution:
+
+Recreate the pod with a new container called sidecar. Update the /root/elastic-app-cka02-arch.yaml YAML file as shown below:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: elastic-app-cka02-arch
+spec:
+  containers:
+  - name: elastic-app
+    image: busybox:1.28
+    args:
+    - /bin/sh
+    - -c
+    - >
+      mkdir /var/log; 
+      i=0;
+      while true;
+      do
+        echo "$(date) INFO $i" >> /var/log/elastic-app.log;
+        i=$((i+1));
+        sleep 1;
+      done
+    volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+  - name: sidecar
+    image: busybox:1.28
+    args: [/bin/sh, -c, 'tail -f  /var/log/elastic-app.log']
+    volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+  volumes:
+  - name: varlog
+    emptyDir: {}
+
+
+
+Next, recreate the pod:
+
+student-node ~ ➜ kubectl replace -f /root/elastic-app-cka02-arch.yaml --force --context cluster3
+pod "elastic-app-cka02-arch" deleted
+pod/elastic-app-cka02-arch replaced
+
+student-node ~ ➜ 
+
+
+
+
+_____________________________________________
+
+22-
+
+SECTION: TROUBLESHOOTING
+
+
+For this question, please set the context to cluster1 by running:
+
+
+kubectl config use-context cluster1
+
+
+The db-deployment-cka05-trb deployment is having 0 out of 1 PODs ready.
+
+
+Figure out the issues and fix the same but make sure that you do not remove any DB related environment variables from the deployment/pod.
+
+
+Solution:
+
+Find out the name of the DB POD:
+kubectl get pod
+Check the DB POD logs:
+kubectl logs <pod-name>
+You might see something like as below which is not that helpful:
+
+Error from server (BadRequest): container "db" in pod "db-deployment-cka05-trb-7457c469b7-zbvx6" is waiting to start: CreateContainerConfigError
+So let's look into the kubernetes events for this pod:
+
+kubectl get event --field-selector involvedObject.name=<pod-name>
+You will see some errors as below:
+
+Error: couldn't find key db in Secret default/db-cka05-trb
+Now let's look into all secrets:
+
+kubectl get secrets db-root-pass-cka05-trb -o yaml
+kubectl get secrets db-user-pass-cka05-trb -o yaml
+kubectl get secrets db-cka05-trb -o yaml
+Now let's look into the deployment.
+
+Edit the deployment
+kubectl edit deployment db-deployment-cka05-trb -o yaml
+You will notice that some of the keys are different what are reffered in the deployment.
+
+Change some env keys: db to database , db-user to username and db-password to password
+Change a secret reference: db-user-cka05-trb to db-user-pass-cka05-trb
+Finally save the changes.
+
+
+_____________________________________________
+
+23-
+
+SECTION: STORAGE
+
+
+For this question, please set the context to cluster1 by running:
+
+
+kubectl config use-context cluster1
+
+
+A persistent volume called papaya-pv-cka09-str is already created with a storage capacity of 150Mi. It's using the papaya-stc-cka09-str storage class with the path /opt/papaya-stc-cka09-str.
+
+
+Also, a persistent volume claim named papaya-pvc-cka09-str has also been created on this cluster. This PVC has requested 50Mi of storage from papaya-pv-cka09-str volume.
+
+
+Resize the PVC to 80Mi and make sure the PVC is in Bound state.
+
+
+Solution:
+
+Edit papaya-pv-cka09-str PV:
+
+kubectl get pv papaya-pv-cka09-str -o yaml > /tmp/papaya-pv-cka09-str.yaml
+Edit the template:
+
+vi /tmp/papaya-pv-cka09-str.yaml
+Delete all entries for uid:, annotations, status:, claimRef: from the template.
+Edit papaya-pvc-cka09-str PVC:
+
+kubectl get pvc papaya-pvc-cka09-str -o yaml > /tmp/papaya-pvc-cka09-str.yaml
+Edit the template:
+
+vi /tmp/papaya-pvc-cka09-str.yaml
+Under resources: -> requests: change storage: 50Mi to storage: 80Mi and save the template.
+Delete the exsiting PVC:
+
+kubectl delete pvc papaya-pvc-cka09-str
+Delete the exsiting PV and create using the template:
+
+kubectl delete pv papaya-pv-cka09-str
+kubectl apply -f /tmp/papaya-pv-cka09-str.yaml
+Create the PVC using template:
+
+kubectl apply -f /tmp/papaya-pvc-cka09-str.yaml
+
+
+
+
+
+
+
+
+
