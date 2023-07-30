@@ -1213,3 +1213,110 @@ service/wear-service-cka09-svcn exposed
 student-node ~ ➜  k get svc -n app-space
 NAME                      TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
 wear-service-cka09-svcn   LoadBalancer   10.43.68.233   172.25.0.14   8080:32109/TCP   14s
+
+
+
+
+
+
+
+
+_____________________________________________
+
+21-
+
+For this question, please set the context to cluster1 by running:
+
+
+kubectl config use-context cluster1
+
+
+There is a deployment called nginx-dp-cka04-trb which has been used to deploy a static website. The access to this website can be tested by running: curl http://kodekloud-exam.app:30002. However, it is not working at the moment.
+
+
+Troubleshoot and fix it.
+
+
+Solution:
+
+First list the available pods:
+kubectl get pod
+Look into the nginx-dp-xxxx POD logs
+kubectl logs -f <pod-name>
+You may not see any logs so look into the kubernetes events for <pod-name> POD
+
+Look into the POD events
+kubectl get event --field-selector involvedObject.name=<pod-name>
+You will see an error something like:
+
+70s         Warning   FailedMount   pod/nginx-dp-cka04-trb-767b767dc-6c5wk   Unable to attach or mount volumes: unmounted volumes=[nginx-config-volume-cka04-trb], unattached volumes=[index-volume-cka04-trb kube-api-access-4fbrb nginx-config-volume-cka04-trb]: timed out waiting for the condition
+From the error we can see that its not able to mount nginx-config-volume-cka04-trb volume
+
+Check the nginx-dp-cka04-trb deployment
+kubectl get deploy nginx-dp-cka04-trb -o=yaml
+Under volumes: look for the configMap: name which is nginx-configuration-cka04-trb. Now lets look into this configmap.
+
+kubectl get configmap nginx-configuration-cka04-trb
+The above command will fail as there is no configmap with this name, so now list the all configmaps.
+
+kubectl get configmap
+You will see an configmap named nginx-config-cka04-trb which seems to be the correct one.
+
+Edit the nginx-dp-cka04-trb deployment now
+kubectl edit deploy nginx-dp-cka04-trb
+Under configMap: change nginx-configuration-cka04-trb to nginx-config-cka04-trb. Once done wait for the POD to come up.
+
+Try to access the website now:
+
+curl http://kodekloud-exam.app:30002
+
+
+
+_____________________________________________
+
+22-
+
+SECTION: TROUBLESHOOTING
+
+
+For this question, please set the context to cluster4 by running:
+
+
+kubectl config use-context cluster4
+
+
+There is a pod called pink-pod-cka16-trb created in the default namespace in cluster4. This app runs on port tcp/5000 and it is exposed to end-users using an ingress resource called pink-ing-cka16-trb in such a way that it is supposed to be accessible using the command: curl http://kodekloud-pink.app on cluster4-controlplane host.
+
+
+However, this is not working. Troubleshoot and fix this issue, making any necessary to the objects.
+
+
+
+Note: You should be able to ssh into the cluster4-controlplane using ssh cluster4-controlplane command.
+
+
+Solution:
+
+SSH into the cluster4-controlplane host and try to access the app.
+ssh cluster4-controlplane
+curl kodekloud-pink.app
+You must be getting 503 Service Temporarily Unavailabl error.
+Let's look into the service:
+
+kubectl edit svc pink-svc-cka16-trb
+Under ports: change protocol: UDP to protocol: TCP
+Try to access the app again
+
+curl kodekloud-pink.app
+You must be getting curl: (6) Could not resolve host: example.com error, from the error we can see that its not able to resolve example.com host which indicated that it can be some issue related to the DNS. As we know CoreDNS is a DNS server that can serve as the Kubernetes cluster DNS, so it can be something related to CoreDNS.
+
+Let's check if we have CoreDNS deployment running:
+
+kubectl get deploy -n kube-system
+You will see that for coredns all relicas are down, you will see 0/0 ready pods. So let's scale up this deployment.
+
+kubectl scale --replicas=2 deployment coredns -n kube-system
+Once CoreDBS is up let's try to access to app again.
+
+curl kodekloud-pink.app
+It should work now.
